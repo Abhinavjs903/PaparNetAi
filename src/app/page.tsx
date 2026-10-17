@@ -66,6 +66,12 @@ export default function HomePage() {
 
   useEffect(() => () => { streamRef.current?.getTracks().forEach((track) => track.stop()); }, []);
 
+  useEffect(() => {
+    if (!cameraOn || !videoRef.current || !streamRef.current) return;
+    videoRef.current.srcObject = streamRef.current;
+    void videoRef.current.play().catch(() => setError("Could not start camera playback. Check browser permissions and try again."));
+  }, [cameraOn]);
+
   const stopCamera = () => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
@@ -100,7 +106,6 @@ export default function HomePage() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
       streamRef.current = stream;
-      if (videoRef.current) { videoRef.current.srcObject = stream; await videoRef.current.play(); }
       setCameraOn(true);
       setStatus("Frame the whole page, then capture the camera image.");
     } catch {
@@ -219,14 +224,14 @@ export default function HomePage() {
         <section className="preview-column">
           <div className="panel preview-panel">
             <div className="preview-head"><div><small>SOURCE FRAME</small><strong>{fileName || (cameraOn ? "Camera preview" : "No image selected")}</strong></div><span>{imageUrl ? "INPUT" : "AWAITING INPUT"}</span></div>
-            {cameraOn && !imageUrl ? <div className="camera-stage"><video ref={videoRef} autoPlay muted playsInline /><p>Keep the full paper inside the frame.</p></div> : imageUrl ? <div className="image-stage"><div className="image-wrap" onClick={markCorner} role="button" tabIndex={0} aria-label="Select four paper corners" onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") markCorner(event as unknown as ReactMouseEvent<HTMLDivElement>); }}>
+            {cameraOn && !imageUrl ? <div className="camera-stage"><video ref={videoRef} autoPlay muted playsInline /><p>Keep the full paper inside the frame.</p></div> : imageUrl ? <div className="image-stage"><button type="button" className="image-wrap" onClick={markCorner} aria-label="Select four paper corners">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img ref={imageRef} src={imageUrl} alt="Circuit sketch for corner selection" />
               <svg className="point-overlay" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
                 {corners.length > 1 && <polyline points={corners.map((p) => (p.x * 1000) + "," + (p.y * 1000)).join(" ")} fill="none" stroke="#8fc5ff" strokeWidth="3" vectorEffect="non-scaling-stroke" />}
                 {corners.map((p, i) => <g key={i}><circle cx={p.x * 1000} cy={p.y * 1000} r="13" fill="#8fc5ff" stroke="#09111d" strokeWidth="4" vectorEffect="non-scaling-stroke" /><text x={p.x * 1000} y={p.y * 1000 + 1} textAnchor="middle" dominantBaseline="middle" fontSize="11" fontWeight="700" fill="#09111d">{i + 1}</text></g>)}
               </svg>
-            </div><p className="image-hint">{corners.length < 4 ? "Select point " + (corners.length + 1) + " of 4 · " + NAMES[corners.length] : "Four corners marked · ready to flatten"}</p></div> : <div className="empty-stage"><div className="paper-icon"><i /><i /><i /></div><strong>Your circuit sketch will appear here</strong><p>Upload a photo or enable the camera to get started.</p><button className="button" onClick={() => fileInput.current?.click()}>Choose image</button></div>}
+            </button><p className="image-hint">{corners.length < 4 ? "Select point " + (corners.length + 1) + " of 4 · " + NAMES[corners.length] : "Four corners marked · ready to flatten"}</p></div> : <div className="empty-stage"><div className="paper-icon"><i /><i /><i /></div><strong>Your circuit sketch will appear here</strong><p>Upload a photo or enable the camera to get started.</p><button className="button" onClick={() => fileInput.current?.click()}>Choose image</button></div>}
             <div className="status-bar"><i />{status}</div>
           </div>
 
