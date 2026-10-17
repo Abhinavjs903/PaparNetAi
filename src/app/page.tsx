@@ -30,6 +30,7 @@ export default function HomePage() {
   const [cvReady, setCvReady] = useState(false);
   const [cvLoading, setCvLoading] = useState(true);
   const [warped, setWarped] = useState(false);
+  const [warpedUrl, setWarpedUrl] = useState("");
   const [error, setError] = useState("");
   const [status, setStatus] = useState("Upload a sketch or start the camera to begin.");
   const fileInput = useRef<HTMLInputElement>(null);
@@ -76,6 +77,7 @@ export default function HomePage() {
     setFileName(name);
     setCorners([]);
     setWarped(false);
+    setWarpedUrl("");
     setError("");
     setStatus("Click the four paper corners clockwise, starting at the top-left.");
   };
@@ -127,6 +129,7 @@ export default function HomePage() {
     const next = [...corners, point];
     setCorners(next);
     setWarped(false);
+    setWarpedUrl("");
     setError("");
     setStatus(next.length === 4 ? "Four corners selected. Run perspective correction." : "Corner " + next.length + " selected. Next: " + NAMES[next.length] + ".");
   };
@@ -149,6 +152,7 @@ export default function HomePage() {
       canvas.width = W;
       canvas.height = H;
       cv.imshow(canvas, dst);
+      setWarpedUrl(canvas.toDataURL("image/png"));
       setWarped(true);
       setError("");
       setStatus("Perspective correction complete. The normalized 800 × 600 image is ready for Phase 2.");
@@ -165,16 +169,16 @@ export default function HomePage() {
     setFileName("");
     setCorners([]);
     setWarped(false);
+    setWarpedUrl("");
     setError("");
     setStatus("Upload a sketch or start the camera to begin.");
     if (fileInput.current) fileInput.current.value = "";
   };
 
   const download = () => {
-    const canvas = canvasRef.current;
-    if (!canvas || !warped) return;
+    if (!warpedUrl || !warped) return;
     const anchor = document.createElement("a");
-    anchor.href = canvas.toDataURL("image/png");
+    anchor.href = warpedUrl;
     anchor.download = "papernet-corrected-800x600.png";
     anchor.click();
   };
@@ -227,7 +231,7 @@ export default function HomePage() {
           </div>
 
           <div className="panel output-panel"><div className="preview-head"><div><small>NORMALIZED OUTPUT</small><strong>Perspective-corrected frame</strong></div><span>{warped ? "800 × 600 PX" : "NOT GENERATED"}</span></div>
-            {warped ? <div className="warped-preview"><canvas ref={canvasRef} /><div className="output-actions"><small>PNG · 4:3 canonical frame</small><button className="button primary" onClick={download}>Download PNG ↓</button></div></div> : <div className="output-empty"><b>＋</b><span>Correct perspective to generate a normalized frame.</span><small>Output size is fixed at 800 × 600 pixels.</small></div>}
+            {warped ? <div className="warped-preview"><img src={warpedUrl} alt="Perspective-corrected circuit sketch at 800 by 600 pixels" /><div className="output-actions"><small>PNG · 4:3 canonical frame</small><button className="button primary" onClick={download}>Download PNG ↓</button></div></div> : <div className="output-empty"><b>＋</b><span>Correct perspective to generate a normalized frame.</span><small>Output size is fixed at 800 × 600 pixels.</small></div>}
           </div>
         </section>
 
@@ -245,6 +249,7 @@ export default function HomePage() {
       </section>
       {error && <div className="toast" role="alert"><b>!</b>{error}<button onClick={() => setError("")} aria-label="Dismiss error">×</button></div>}
       <footer className="footer"><span>PaperNet · local-first vision pipeline</span><span>Phase 01 of 03 <i /> Capture &amp; perspective correction</span></footer>
+      <canvas ref={canvasRef} className="processing-canvas" aria-hidden="true" />
     </main>
   );
 }
