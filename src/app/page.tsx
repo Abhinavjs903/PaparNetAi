@@ -124,7 +124,7 @@ export default function HomePage() {
     stopCamera();
   };
 
-  const markCorner = (event: ReactMouseEvent<HTMLDivElement>) => {
+  const markCorner = (event: ReactMouseEvent<HTMLButtonElement>) => {
     if (corners.length >= 4) return;
     const rect = event.currentTarget.getBoundingClientRect();
     const point = {
