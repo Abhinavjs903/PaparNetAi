@@ -1,260 +1,84 @@
 "use client";
 
-import { useEffect, useRef, useState, type ChangeEvent, type MouseEvent as ReactMouseEvent } from "react";
+import Link from "next/link";
+import { useState } from "react";
 
-type Point = { x: number; y: number };
-type CvApi = {
-  Mat: new () => any;
-  imread: (source: HTMLImageElement) => any;
-  imshow: (canvas: HTMLCanvasElement, mat: any) => void;
-  Size: new (width: number, height: number) => any;
-  matFromArray: (rows: number, cols: number, type: number, data: number[]) => any;
-  getPerspectiveTransform: (src: any, dst: any) => any;
-  warpPerspective: (src: any, dst: any, matrix: any, size: any, interpolation: number, borderMode: number) => void;
-  CV_32FC2: number;
-  INTER_LINEAR: number;
-  BORDER_CONSTANT: number;
-  onRuntimeInitialized?: () => void;
-};
-declare global { interface Window { cv?: CvApi } }
-
-const NAMES = ["Top left", "Top right", "Bottom right", "Bottom left"];
-const W = 800;
-const H = 600;
+const steps = [
+  { n: "01", title: "Capture the physical", desc: "Upload a photo or use your camera. Perspective correction prepares the sketch for analysis.", tag: "CAPTURE" },
+  { n: "02", title: "Reconstruct the circuit", desc: "Review detected symbols, confirm wire connections, and correct uncertain components before simulation.", tag: "COMPUTER VISION" },
+  { n: "03", title: "Verify the result", desc: "Run deterministic circuit analysis, inspect voltages and currents, and export an editable model.", tag: "SIMULATION" },
+];
+const capabilities = [
+  { icon: "⌗", title: "Perspective correction", desc: "Flatten a photographed page into a consistent working frame.", status: "AVAILABLE IN WORKSPACE" },
+  { icon: "⌁", title: "Sketch understanding", desc: "A confidence-aware review flow for symbols, labels and connections.", status: "IN DEVELOPMENT" },
+  { icon: "∿", title: "Circuit simulation", desc: "A deterministic solver for supported circuits, with explicit validation.", status: "NEXT PHASE" },
+];
+const examples = [
+  { title: "Resistor + DC source", kind: "BASIC DC", description: "Start with a closed 9 V loop and a 100 Ω resistor.", circuit: "battery" },
+  { title: "Series resistor network", kind: "NETWORK", description: "Explore current and voltage drops across a series path.", circuit: "series" },
+  { title: "Unknown sketch", kind: "YOUR INPUT", description: "Bring your own hand-drawn circuit into the workspace.", circuit: "upload" },
+];
 
 export default function HomePage() {
-  const [imageUrl, setImageUrl] = useState("");
-  const [fileName, setFileName] = useState("");
-  const [corners, setCorners] = useState<Point[]>([]);
-  const [cameraOn, setCameraOn] = useState(false);
-  const [cvReady, setCvReady] = useState(false);
-  const [cvLoading, setCvLoading] = useState(true);
-  const [warped, setWarped] = useState(false);
-  const [warpedUrl, setWarpedUrl] = useState("");
-  const [error, setError] = useState("");
-  const [status, setStatus] = useState("Upload a sketch or start the camera to begin.");
-  const fileInput = useRef<HTMLInputElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  return <main className="landing">
+    <header className="landing-nav">
+      <Link href="/" className="landing-brand"><span className="landing-mark">P</span><span><strong>PAPERNET</strong><small>PHYSICAL → DIGITAL</small></span></Link>
+      <button className="mobile-menu" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle navigation">☰</button>
+      <nav className={menuOpen ? "landing-links open" : "landing-links"}>
+        <a href="#workflow" onClick={() => setMenuOpen(false)}>Workflow</a>
+        <a href="#capabilities" onClick={() => setMenuOpen(false)}>Capabilities</a>
+        <a href="#examples" onClick={() => setMenuOpen(false)}>Examples</a>
+        <a href="#research" onClick={() => setMenuOpen(false)}>Web research</a>
+      </nav>
+      <Link className="landing-cta" href="/workspace">Start with a sketch <span>↗</span></Link>
+    </header>
 
-  useEffect(() => {
-    let alive = true;
-    const ready = () => { if (alive) { setCvReady(true); setCvLoading(false); } };
-    if (window.cv?.Mat) { ready(); return () => { alive = false; }; }
-    let script = document.querySelector<HTMLScriptElement>('script[data-papernet-opencv="1"]');
-    if (!script) {
-      script = document.createElement("script");
-      script.src = "https://docs.opencv.org/4.x/opencv.js";
-      script.async = true;
-      script.dataset.papernetOpencv = "1";
-      document.head.appendChild(script);
-    }
-    script.addEventListener("load", () => {
-      const cv = window.cv;
-      if (!cv) { if (alive) { setCvLoading(false); setError("OpenCV.js loaded without a runtime. Reload and try again."); } return; }
-      if (cv.Mat) ready();
-      else cv.onRuntimeInitialized = ready;
-    }, { once: true });
-    script.addEventListener("error", () => {
-      if (alive) { setCvLoading(false); setError("OpenCV.js could not load. Check your connection or upload again after reloading."); }
-    }, { once: true });
-    if (window.cv?.Mat) ready();
-    return () => { alive = false; };
-  }, []);
+    <section className="landing-hero">
+      <div className="hero-copy">
+        <p className="landing-eyebrow"><span className="eyebrow-dot" /> ENGINEERING WORKSPACE / DEVLYMPICS SHUNYA 2026</p>
+        <h1>From a paper sketch<br/>to <em>something you can verify.</em></h1>
+        <p className="hero-lede">PaperNet bridges physical drawings and digital engineering. Capture a hand-drawn circuit, review its reconstruction, and move toward a simulation you can trust.</p>
+        <div className="hero-actions"><Link className="landing-cta large" href="/workspace">Open the workspace <span>↗</span></Link><a className="text-link" href="#workflow">Explore the workflow <span>↓</span></a></div>
+        <div className="hero-stats"><div><strong>800 × 600</strong><span>CANONICAL CAPTURE</span></div><div><strong>Local-first</strong><span>IMAGE PROCESSING</span></div><div><strong>Human verified</strong><span>UNCERTAINTY VISIBLE</span></div></div>
+      </div>
+      <div className="hero-art" aria-label="Abstract circuit schematic illustration">
+        <div className="art-grid" />
+        <div className="art-label label-a">FIG 01 / SKETCH INPUT</div><div className="art-label label-b">NODE / 04</div>
+        <svg className="hero-circuit" viewBox="0 0 560 480" role="img" aria-label="Glowing electrical circuit schematic">
+          <defs><linearGradient id="wire" x1="0" x2="1"><stop offset="0" stopColor="#e94e2e"/><stop offset="1" stopColor="#ffb184"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+          <g fill="none" stroke="#2d3b4d" strokeWidth="1"><path d="M70 85H220V150H410V85H490V350H410V405H150V330H70Z"/><path d="M100 110H200V175H385V110H465V325H385V380H175V305H100Z"/></g>
+          <g fill="none" stroke="url(#wire)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" filter="url(#glow)"><path d="M70 85H220V150H300"/><path d="M360 150H410V85H490V350H410V405H150V330H70Z"/><path d="M300 150l10 -14 14 28 14 -28 14 28 8 -14"/><path d="M70 85V180"/><path d="M52 180H88M57 191H83M70 191V330"/></g>
+          <g fill="#ffb184" stroke="#0b0d11" strokeWidth="4"><circle cx="70" cy="85" r="7"/><circle cx="220" cy="150" r="7"/><circle cx="410" cy="85" r="7"/><circle cx="410" cy="350" r="7"/><circle cx="150" cy="405" r="7"/><circle cx="70" cy="330" r="7"/></g>
+          <g fill="#d8e1eb" fontFamily="monospace" fontSize="12"><text x="232" y="133">R1 · 100Ω</text><text x="430" y="75">N1</text><text x="163" y="430">GND</text><text x="28" y="215">9V</text><text x="348" y="455" fill="#8190a2">CIRCUIT GRAPH / PREVIEW</text></g>
+          <g fill="none" stroke="#91bfff" strokeWidth="1" strokeDasharray="3 6"><path d="M220 150L220 65H320"/><path d="M410 350L520 350"/></g>
+          <g fill="#91bfff"><circle cx="320" cy="65" r="3"/><circle cx="520" cy="350" r="3"/></g>
+        </svg>
+        <div className="art-readout"><span className="readout-pulse" /> CIRCUIT GRAPH <strong>PREVIEW MODE</strong></div>
+      </div>
+      <div className="hero-bottom-note"><span>01 — CAPTURE</span><span>02 — RECONSTRUCT</span><span>03 — VERIFY</span></div>
+    </section>
 
-  useEffect(() => () => { streamRef.current?.getTracks().forEach((track) => track.stop()); }, []);
+    <section className="manifesto" id="workflow">
+      <div className="section-kicker">THE WORKFLOW <span>01 / 03</span></div>
+      <div className="section-heading"><h2>One bridge.<br/><em>Three precise steps.</em></h2><p>Recognition is not the finish line. PaperNet is designed to make the path from an imperfect drawing to a validated digital model inspectable at every stage.</p></div>
+      <div className="workflow-cards">{steps.map((step) => <article className="workflow-card" key={step.n}><div className="workflow-card-top"><span>{step.n}</span><span className="mini-cross">↗</span></div><div className="workflow-graphic"><div className={"workflow-symbol symbol-" + step.n}>{step.n === "01" ? <><i/><i/><i/><b>+</b></> : step.n === "02" ? <><b>R</b><i/><b>●</b><i/><b>GND</b></> : <><b>V</b><i/><b>I</b><i/><b>✓</b></>}</div></div><p className="card-tag">{step.tag}</p><h3>{step.title}</h3><p>{step.desc}</p></article>)}</div>
+    </section>
 
-  useEffect(() => {
-    if (!cameraOn || !videoRef.current || !streamRef.current) return;
-    videoRef.current.srcObject = streamRef.current;
-    void videoRef.current.play().catch(() => setError("Could not start camera playback. Check browser permissions and try again."));
-  }, [cameraOn]);
+    <section className="capabilities" id="capabilities">
+      <div className="section-kicker">BUILT FOR REAL ENGINEERING <span>CAPABILITIES</span></div>
+      <div className="section-heading"><h2>Clarity over<br/><em>black-box magic.</em></h2><p>Every stage should be explainable. When the system is unsure about a symbol or a wire, it should ask—not quietly invent a circuit.</p></div>
+      <div className="capability-list">{capabilities.map((item, i) => <article className="capability-row" key={item.title}><span className="capability-index">0{i + 1}</span><span className="capability-icon">{item.icon}</span><div className="capability-copy"><h3>{item.title}</h3><p>{item.desc}</p></div><span className={"capability-status " + (i === 0 ? "available" : "")}><i/>{item.status}</span><span className="capability-arrow">↗</span></article>)}</div>
+    </section>
 
-  const stopCamera = () => {
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
-    setCameraOn(false);
-  };
+    <section className="examples" id="examples">
+      <div className="section-kicker">START SMALL. SCALE WITH CONFIDENCE <span>EXAMPLES</span></div>
+      <div className="section-heading"><h2>From first circuit<br/><em>to your own sketch.</em></h2><p>Use a known example to understand the workflow, or jump straight into your own paper circuit.</p></div>
+      <div className="example-grid">{examples.map((example) => <article className="example-card" key={example.title}><div className="example-drawing"><span className="example-kind">{example.kind}</span><svg viewBox="0 0 300 130" aria-hidden="true"><g stroke="#6e8298" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M45 35H105M155 35H250V100H45V35"/><path d="M105 35l7 -10 10 20 10 -20 10 20 7 -10"/><path d="M45 35V55M33 55H57M37 63H53M45 63V100"/></g><g fill="#ff7656"><circle cx="45" cy="35" r="4"/><circle cx="250" cy="35" r="4"/><circle cx="250" cy="100" r="4"/></g><g fill="#c6d1df" fontSize="10" fontFamily="monospace"><text x="108" y="17">R1</text><text x="20" y="48">V1</text></g></svg></div><div className="example-card-copy"><h3>{example.title}</h3><p>{example.description}</p><Link href="/workspace">{example.circuit === "upload" ? "Upload a sketch" : "Explore workspace"} <span>↗</span></Link></div></article>)}</div>
+    </section>
 
-  const setSource = (url: string, name: string) => {
-    setImageUrl(url);
-    setFileName(name);
-    setCorners([]);
-    setWarped(false);
-    setWarpedUrl("");
-    setError("");
-    setStatus("Click the four paper corners clockwise, starting at the top-left.");
-  };
+    <section className="research-banner" id="research"><div className="research-copy"><p className="landing-eyebrow">RESEARCH LAYER / OPTIONAL</p><h2>Find context for<br/><em>what you recognize.</em></h2><p>Search for component references, datasheets and relevant pages after a component has been identified. TinyFish-powered search and fetch endpoints are optional and require your own API key.</p><Link href="/workspace#research" className="landing-cta">Open research workspace <span>↗</span></Link></div><div className="research-visual"><div className="research-orbit orbit-one"/><div className="research-orbit orbit-two"/><div className="research-chip"><span>R</span><small>100 Ω</small></div><div className="research-result result-one"><b>01</b><span>Resistor reference</span><small>WEB RESULT</small></div><div className="research-result result-two"><b>02</b><span>Component datasheet</span><small>FETCHED CONTENT</small></div></div></section>
 
-  const onUpload = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) { setError("Choose an image file such as JPG, PNG, or WEBP."); return; }
-    if (file.size > 15 * 1024 * 1024) { setError("Image exceeds 15 MB. Choose a smaller file."); return; }
-    stopCamera();
-    setSource(URL.createObjectURL(file), file.name);
-  };
-
-  const startCamera = async () => {
-    setError("");
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setError("Camera access requires localhost or HTTPS. You can upload an image instead.");
-      return;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
-      streamRef.current = stream;
-      setCameraOn(true);
-      setStatus("Frame the whole page, then capture the camera image.");
-    } catch {
-      setError("Camera permission was denied or no camera is available. Use image upload instead.");
-    }
-  };
-
-  const captureFrame = () => {
-    const video = videoRef.current;
-    if (!video || video.videoWidth === 0) { setError("Camera is starting. Wait a moment and retry."); return; }
-    const frame = document.createElement("canvas");
-    frame.width = video.videoWidth;
-    frame.height = video.videoHeight;
-    frame.getContext("2d")?.drawImage(video, 0, 0);
-    setSource(frame.toDataURL("image/jpeg", 0.94), "camera-capture.jpg");
-    stopCamera();
-  };
-
-  const markCorner = (event: ReactMouseEvent<HTMLButtonElement>) => {
-    if (corners.length >= 4) return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    const point = {
-      x: Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)),
-      y: Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height)),
-    };
-    const next = [...corners, point];
-    setCorners(next);
-    setWarped(false);
-    setWarpedUrl("");
-    setError("");
-    setStatus(next.length === 4 ? "Four corners selected. Run perspective correction." : "Corner " + next.length + " selected. Next: " + NAMES[next.length] + ".");
-  };
-
-  const correctPerspective = () => {
-    const cv = window.cv;
-    const image = imageRef.current;
-    const canvas = canvasRef.current;
-    if (!cvReady || !cv || !image || !canvas) { setError("Wait for the OpenCV runtime to become ready."); return; }
-    if (corners.length !== 4) { setError("Mark all four paper corners before correcting perspective."); return; }
-    let src: any, dst: any, srcPts: any, dstPts: any, matrix: any;
-    try {
-      const points = corners.map((p) => ({ x: p.x * image.naturalWidth, y: p.y * image.naturalHeight }));
-      src = cv.imread(image);
-      srcPts = cv.matFromArray(4, 1, cv.CV_32FC2, points.flatMap((p) => [p.x, p.y]));
-      dstPts = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, W - 1, 0, W - 1, H - 1, 0, H - 1]);
-      matrix = cv.getPerspectiveTransform(srcPts, dstPts);
-      dst = new cv.Mat();
-      cv.warpPerspective(src, dst, matrix, new cv.Size(W, H), cv.INTER_LINEAR, cv.BORDER_CONSTANT);
-      canvas.width = W;
-      canvas.height = H;
-      cv.imshow(canvas, dst);
-      setWarpedUrl(canvas.toDataURL("image/png"));
-      setWarped(true);
-      setError("");
-      setStatus("Perspective correction complete. The normalized 800 × 600 image is ready for Phase 2.");
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Perspective correction failed. Re-select the four corners.");
-    } finally {
-      src?.delete(); dst?.delete(); srcPts?.delete(); dstPts?.delete(); matrix?.delete();
-    }
-  };
-
-  const reset = () => {
-    stopCamera();
-    setImageUrl("");
-    setFileName("");
-    setCorners([]);
-    setWarped(false);
-    setWarpedUrl("");
-    setError("");
-    setStatus("Upload a sketch or start the camera to begin.");
-    if (fileInput.current) fileInput.current.value = "";
-  };
-
-  const download = () => {
-    if (!warpedUrl || !warped) return;
-    const anchor = document.createElement("a");
-    anchor.href = warpedUrl;
-    anchor.download = "papernet-corrected-800x600.png";
-    anchor.click();
-  };
-
-  return (
-    <main className="shell">
-      <header className="topbar">
-        <a className="brand" href="/"><span className="brand-mark">P</span><span><strong>PaperNet</strong><small>PHYSICAL → DIGITAL</small></span></a>
-        <div className="top-meta"><i /> DEVLYMPICS SHUNYA 2026 <span>/</span> PHASE 01</div>
-        <div className="top-spacer" />
-        <span className={"engine-pill " + (cvReady ? "ready" : "")}><i />{cvReady ? "OPENCV READY" : cvLoading ? "LOADING OPENCV…" : "OPENCV OFFLINE"}</span>
-        <button className="button quiet" onClick={reset}>Reset</button>
-      </header>
-
-      <section className="intro">
-        <div><p className="eyebrow">CIRCUIT CAPTURE WORKSPACE</p><h1>Bring the paper circuit into focus.</h1><p className="subhead">Capture a hand-drawn circuit, mark the paper boundary, and flatten it into a consistent frame for computer vision.</p></div>
-        <div className="phase-card"><span>PHASE 01</span><strong>Capture + perspective</strong><small>Target output · 800 × 600 px</small></div>
-      </section>
-
-      <nav className="pipeline"><div className="pipeline-step active"><b>01</b><span><strong>Capture</strong><small>Camera or upload</small></span></div><div className="pipeline-line" /><div className={"pipeline-step " + (imageUrl ? "active" : "")}><b>02</b><span><strong>Mark corners</strong><small>Clockwise selection</small></span></div><div className="pipeline-line" /><div className={"pipeline-step " + (warped ? "active" : "")}><b>03</b><span><strong>Flatten</strong><small>OpenCV transform</small></span></div></nav>
-
-      <section className="workspace">
-        <aside className="panel controls">
-          <div className="panel-title"><b>01</b><div><h2>Input source</h2><p>Use a photo or live camera.</p></div></div>
-          <input ref={fileInput} className="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp,image/*" onChange={onUpload} />
-          <button className="button primary full" onClick={() => fileInput.current?.click()}>↑ Upload circuit image</button>
-          <button className="button full" onClick={cameraOn ? stopCamera : startCamera}>{cameraOn ? "Stop camera" : "◎ Start camera"}</button>
-          {cameraOn && <button className="button primary full" onClick={captureFrame}>Capture frame</button>}
-          <div className="rule" />
-          <div className="panel-title"><b>02</b><div><h2>Paper boundary</h2><p>Click four corners in order.</p></div></div>
-          <ol className="corner-list">{NAMES.map((name, i) => <li key={name} className={corners[i] ? "done" : ""}><span>{i + 1}</span>{name}<em>{corners[i] ? "✓" : "—"}</em></li>)}</ol>
-          <div className="button-row"><button className="button" disabled={!corners.length} onClick={() => { setCorners(corners.slice(0, -1)); setWarped(false); }}>Undo point</button><button className="button" disabled={!corners.length} onClick={() => { setCorners([]); setWarped(false); }}>Clear points</button></div>
-          <div className="rule" />
-          <button className="button primary full" disabled={!imageUrl || corners.length !== 4 || !cvReady} onClick={correctPerspective}>Correct perspective ↗</button>
-          <p className="microcopy">Image processing happens in your browser. No image is uploaded to a server.</p>
-        </aside>
-
-        <section className="preview-column">
-          <div className="panel preview-panel">
-            <div className="preview-head"><div><small>SOURCE FRAME</small><strong>{fileName || (cameraOn ? "Camera preview" : "No image selected")}</strong></div><span>{imageUrl ? "INPUT" : "AWAITING INPUT"}</span></div>
-            {cameraOn && !imageUrl ? <div className="camera-stage"><video ref={videoRef} autoPlay muted playsInline /><p>Keep the full paper inside the frame.</p></div> : imageUrl ? <div className="image-stage"><button type="button" className="image-wrap" onClick={markCorner} aria-label="Select four paper corners">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img ref={imageRef} src={imageUrl} alt="Circuit sketch for corner selection" />
-              <svg className="point-overlay" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
-                {corners.length > 1 && <polyline points={corners.map((p) => (p.x * 1000) + "," + (p.y * 1000)).join(" ")} fill="none" stroke="#8fc5ff" strokeWidth="3" vectorEffect="non-scaling-stroke" />}
-                {corners.map((p, i) => <g key={i}><circle cx={p.x * 1000} cy={p.y * 1000} r="13" fill="#8fc5ff" stroke="#09111d" strokeWidth="4" vectorEffect="non-scaling-stroke" /><text x={p.x * 1000} y={p.y * 1000 + 1} textAnchor="middle" dominantBaseline="middle" fontSize="11" fontWeight="700" fill="#09111d">{i + 1}</text></g>)}
-              </svg>
-            </button><p className="image-hint">{corners.length < 4 ? "Select point " + (corners.length + 1) + " of 4 · " + NAMES[corners.length] : "Four corners marked · ready to flatten"}</p></div> : <div className="empty-stage"><div className="paper-icon"><i /><i /><i /></div><strong>Your circuit sketch will appear here</strong><p>Upload a photo or enable the camera to get started.</p><button className="button" onClick={() => fileInput.current?.click()}>Choose image</button></div>}
-            <div className="status-bar"><i />{status}</div>
-          </div>
-
-          <div className="panel output-panel"><div className="preview-head"><div><small>NORMALIZED OUTPUT</small><strong>Perspective-corrected frame</strong></div><span>{warped ? "800 × 600 PX" : "NOT GENERATED"}</span></div>
-            {warped ? <div className="warped-preview"><img src={warpedUrl} alt="Perspective-corrected circuit sketch at 800 by 600 pixels" /><div className="output-actions"><small>PNG · 4:3 canonical frame</small><button className="button primary" onClick={download}>Download PNG ↓</button></div></div> : <div className="output-empty"><b>＋</b><span>Correct perspective to generate a normalized frame.</span><small>Output size is fixed at 800 × 600 pixels.</small></div>}
-          </div>
-        </section>
-
-        <aside className="panel inspector">
-          <div className="panel-title"><b>i</b><div><h2>Capture inspector</h2><p>Session and runtime status.</p></div></div>
-          <div className="metric"><small>VISION ENGINE</small><strong className={cvReady ? "good" : ""}>{cvReady ? "Ready" : cvLoading ? "Initializing…" : "Unavailable"}</strong><p>{cvReady ? "OpenCV.js runtime loaded" : "Needs internet on first load"}</p></div>
-          <div className="metric"><small>INPUT IMAGE</small><strong>{imageUrl ? "Loaded" : cameraOn ? "Live stream" : "Waiting"}</strong><p>{fileName || "No source attached"}</p></div>
-          <div className="metric"><small>CORNER POINTS</small><strong>{corners.length} / 4</strong><p>{corners.length === 4 ? "Boundary complete" : "Mark paper edges, not circuit nodes"}</p></div>
-          <div className="metric"><small>OUTPUT FRAME</small><strong>{warped ? "800 × 600" : "—"}</strong><p>Four-point perspective transform</p></div>
-          <div className="rule" />
-          <div className="tip"><b>✳</b><div><strong>For best results</strong><p>Use a flat, well-lit page. Keep all paper edges in frame and avoid shadows.</p></div></div>
-          <div className="tip"><b className="amber">!</b><div><strong>Point order matters</strong><p>Tap top-left, top-right, bottom-right, then bottom-left.</p></div></div>
-          <div className="next-phase"><small>NEXT UP</small><strong>Phase 02 · Ink extraction</strong><p>Grayscale, adaptive thresholding, and stroke cleanup will use the corrected frame.</p><em>PLANNED · NOT IMPLEMENTED</em></div>
-        </aside>
-      </section>
-      {error && <div className="toast" role="alert"><b>!</b>{error}<button onClick={() => setError("")} aria-label="Dismiss error">×</button></div>}
-      <footer className="footer"><span>PaperNet · local-first vision pipeline</span><span>Phase 01 of 03 <i /> Capture &amp; perspective correction</span></footer>
-      <canvas ref={canvasRef} className="processing-canvas" aria-hidden="true" />
-    </main>
-  );
+    <footer className="landing-footer"><Link href="/" className="landing-brand"><span className="landing-mark">P</span><span><strong>PAPERNET</strong><small>PHYSICAL → DIGITAL</small></span></Link><p>Turn physical drawings into digital engineering models.</p><div className="footer-links"><a href="#workflow">Workflow</a><a href="#capabilities">Capabilities</a><Link href="/workspace">Workspace</Link><a href="https://github.com/Abhinavjs903/PaparNetAi" target="_blank" rel="noreferrer">GitHub ↗</a></div><span className="footer-legal">DEVLYMPICS SHUNYA 2026 · BUILT FOR VERIFIABLE RECONSTRUCTION</span></footer>
+  </main>;
 }

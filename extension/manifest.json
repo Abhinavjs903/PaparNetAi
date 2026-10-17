@@ -1,0 +1,9 @@
+{
+  "manifest_version": 3,
+  "name": "PaperNet Web Research",
+  "version": "0.1.0",
+  "description": "Send a page to PaperNet for clean extraction, or search for references to an identified circuit component.",
+  "permissions": ["activeTab"],
+  "host_permissions": ["http://localhost:3000/*", "http://127.0.0.1:3000/*"],
+  "action": { "default_title": "Research with PaperNet", "default_popup": "popup.html" }
+}
