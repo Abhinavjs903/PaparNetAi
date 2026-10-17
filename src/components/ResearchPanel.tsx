@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 
 type SearchResult = { title: string; url: string; snippet: string; siteName?: string };
 type FetchedPage = { title: string; url: string; finalUrl: string; text: string; imageLinks: string[]; links: string[] };
@@ -14,7 +14,7 @@ export default function ResearchPanel() {
   const [notice, setNotice] = useState("Search for component references, symbol images, or datasheets.");
   const [activeUrl, setActiveUrl] = useState("");
 
-  async function search(event: React.FormEvent) {
+  async function search(event: FormEvent) {
     event.preventDefault();
     if (query.trim().length < 2) return;
     setBusy(true); setError(""); setPages([]); setNotice("Searching the web…");
