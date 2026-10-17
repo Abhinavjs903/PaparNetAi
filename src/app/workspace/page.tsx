@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ChangeEvent, type MouseEvent as ReactMouseEvent } from "react";
+import ResearchPanel from "@/components/ResearchPanel";
 
 type Point = { x: number; y: number };
 type CvApi = {
@@ -252,6 +253,7 @@ export default function HomePage() {
           <div className="next-phase"><small>NEXT UP</small><strong>Phase 02 · Ink extraction</strong><p>Grayscale, adaptive thresholding, and stroke cleanup will use the corrected frame.</p><em>PLANNED · NOT IMPLEMENTED</em></div>
         </aside>
       </section>
+      <div className="workspace-research"><ResearchPanel /></div>
       {error && <div className="toast" role="alert"><b>!</b>{error}<button onClick={() => setError("")} aria-label="Dismiss error">×</button></div>}
       <footer className="footer"><span>PaperNet · local-first vision pipeline</span><span>Phase 01 of 03 <i /> Capture &amp; perspective correction</span></footer>
       <canvas ref={canvasRef} className="processing-canvas" aria-hidden="true" />
