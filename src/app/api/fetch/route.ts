@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 const blockedHost = (hostname: string) => {
   const host = hostname.toLowerCase().replace(/^\[|\]$/g, "");
-  return host === "localhost" || host.endsWith(".localhost") || host === "::1" || host === "0.0.0.0" ||
+  return host === "localhost" || host.endsWith(".localhost") || host === "::1" || host === "0.0.0.0" || host.includes(":") ||
     /^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host) ||
     /^169\.254\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host) || host.endsWith(".local");
 };
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       url: String(item.url ?? ""), finalUrl: String(item.final_url ?? item.url ?? ""),
       title: String(item.title ?? "Fetched page").slice(0, 300),
       text: String(item.text ?? "").slice(0, 24000),
-      imageLinks: Array.isArray(item.image_links) ? item.image_links.filter((x: unknown) => typeof x === "string" && /^https?:\/\//i.test(x)).slice(0, 30) : [],
+      imageLinks: Array.isArray(item.image_links) ? item.image_links.map((x: unknown) => typeof x === "string" ? x : x && typeof x === "object" && "url" in x ? String((x as { url: unknown }).url) : "").filter((x: string) => /^https?:\/\//i.test(x)).slice(0, 30) : [],
       links: Array.isArray(item.links) ? item.links.filter((x: unknown) => typeof x === "string" && /^https?:\/\//i.test(x)).slice(0, 30) : []
     })) : [];
     const errors = Array.isArray(data.errors) ? data.errors.slice(0, 5) : [];
